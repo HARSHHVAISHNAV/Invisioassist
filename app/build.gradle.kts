@@ -5,7 +5,7 @@ plugins {
 
 android {
     namespace = "com.muggles.invisioassist"
-    compileSdk = 34
+    compileSdk = 35
 
     defaultConfig {
         applicationId = "com.muggles.invisioassist"
