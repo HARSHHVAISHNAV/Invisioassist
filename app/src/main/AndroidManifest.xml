@@ -1,6 +1,11 @@
 <?xml version="1.0" encoding="utf-8"?>
 <manifest xmlns:android="http://schemas.android.com/apk/res/android"
     xmlns:tools="http://schemas.android.com/tools">
+    <!-- ✅ Add Camera Permission -->
+    <uses-permission android:name="android.permission.CAMERA" />
+
+    <!-- ✅ Declare Camera Feature -->
+    <uses-feature android:name="android.hardware.camera.any" />
 
     <application
         android:allowBackup="true"
@@ -24,6 +29,7 @@
 <!--            </intent-filter>-->
 <!--        </activity>-->
 
+
         <activity
             android:name=".IntroductionActivity"
             android:exported="true">  <!-- Required for Android 12+ -->
@@ -37,6 +43,8 @@
         <activity android:name=".LanguageSelectionActivity" />
         <activity android:name=".ScanPreviewActivity" android:exported="false"/>
         <activity android:name=".ProfileActivity" android:exported="false"/>
+        <activity android:name=".HelpSupportActivity" android:exported="false"/>
+
     </application>
 
 </manifest>

@@ -14,6 +14,9 @@ import androidx.camera.lifecycle.ProcessCameraProvider
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.shape.CircleShape
+import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.PhotoLibrary
+import androidx.compose.material.icons.filled.Person
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
@@ -35,14 +38,20 @@ import androidx.lifecycle.LifecycleOwner
 import java.util.Locale
 import android.speech.tts.TextToSpeech
 import androidx.camera.view.PreviewView
-
-
+import android.provider.MediaStore
 
 class ScanPreviewActivity : ComponentActivity() {
     private lateinit var cameraExecutor: ExecutorService
     private var capturedImage by mutableStateOf<Bitmap?>(null)
     private lateinit var textToSpeech: TextToSpeech
 
+    // ✅ Gallery Image Picker Launcher
+    private val galleryLauncher = registerForActivityResult(ActivityResultContracts.GetContent()) { uri ->
+        uri?.let {
+            val bitmap = MediaStore.Images.Media.getBitmap(this.contentResolver, it)
+            processImage(bitmap) // Process selected image
+        }
+    }
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
@@ -59,7 +68,7 @@ class ScanPreviewActivity : ComponentActivity() {
         setContent {
             ScanPreviewScreen(
                 onProfileClick = { startActivity(Intent(this, ProfileActivity::class.java)) },
-                onGalleryClick = { /* TODO: Implement gallery picker */ },
+                onGalleryClick = { galleryLauncher.launch("image/*") }, // ✅ Open gallery on tap
                 onCaptureImage = { bitmap ->
                     capturedImage = bitmap
                     processImage(bitmap)
@@ -101,10 +110,10 @@ class ScanPreviewActivity : ComponentActivity() {
                 }
                 Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceEvenly) {
                     IconButton(onClick = onGalleryClick, modifier = Modifier.size(64.dp)) {
-                        Text("📷")
+                        Icon(imageVector = Icons.Default.PhotoLibrary, contentDescription = "Gallery")
                     }
                     IconButton(onClick = onProfileClick, modifier = Modifier.size(64.dp)) {
-                        Text("👤")
+                        Icon(imageVector = Icons.Default.Person, contentDescription = "Profile")
                     }
                 }
             }
@@ -130,7 +139,7 @@ class ScanPreviewActivity : ComponentActivity() {
                 val imageCapture = ImageCapture.Builder()
                     .setCaptureMode(ImageCapture.CAPTURE_MODE_MAXIMIZE_QUALITY)
                     .build()
-                cameraProvider.bindToLifecycle(context as LifecycleOwner, cameraSelector, preview, imageCapture)
+                cameraProvider.bindToLifecycle(this as LifecycleOwner, cameraSelector, preview, imageCapture)
                 previewView.setOnTouchListener { _, event ->
                     if (event.action == MotionEvent.ACTION_DOWN) {
                         imageCapture.takePicture(ContextCompat.getMainExecutor(ctx), object : ImageCapture.OnImageCapturedCallback() {
@@ -151,6 +160,7 @@ class ScanPreviewActivity : ComponentActivity() {
             }
         )
     }
+
     private fun processImage(bitmap: Bitmap) {
         val image = InputImage.fromBitmap(bitmap, 0)  // Convert Bitmap to ML Kit InputImage
         val recognizer = TextRecognition.getClient(TextRecognizerOptions.DEFAULT_OPTIONS)
@@ -171,5 +181,4 @@ class ScanPreviewActivity : ComponentActivity() {
         textToSpeech.stop()
         textToSpeech.shutdown()
     }
-
 }
