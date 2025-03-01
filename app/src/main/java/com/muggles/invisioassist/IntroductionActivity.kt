@@ -1,20 +1,18 @@
 package com.muggles.invisioassist
+
+import android.content.Intent
 import android.os.Bundle
 import android.os.Handler
 import android.os.Looper
-import android.content.Intent
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
 import androidx.compose.animation.AnimatedVisibility
 import androidx.compose.animation.fadeIn
 import androidx.compose.foundation.layout.*
-import androidx.compose.material3.MaterialTheme
-import androidx.compose.material3.Surface
-import androidx.compose.material3.Text
+import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import kotlinx.coroutines.delay
@@ -22,24 +20,27 @@ import kotlinx.coroutines.delay
 class IntroductionActivity : ComponentActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
+
+        // Navigate to LoginActivity after 3 seconds
+        Handler(Looper.getMainLooper()).postDelayed({
+            startActivity(Intent(this, LoginActivity::class.java))
+            finish()
+        }, 3000)
+
+        // Set UI Content
         setContent {
-            IntroductionScreen {
-                startActivity(Intent(this@IntroductionActivity, LoginActivity::class.java))
-                finish()
-            }
+            IntroductionScreen()
         }
     }
 }
 
 @Composable
-fun IntroductionScreen(onAnimationEnd: () -> Unit) {
+fun IntroductionScreen() {
     var isVisible by remember { mutableStateOf(false) }
 
     LaunchedEffect(Unit) {
         delay(500) // Small delay before fade-in starts
         isVisible = true
-        delay(3000) // Show animation for 3 seconds
-        onAnimationEnd()
     }
 
     Surface(
@@ -56,10 +57,4 @@ fun IntroductionScreen(onAnimationEnd: () -> Unit) {
             }
         }
     }
-}
-
-@Preview(showBackground = true)
-@Composable
-fun PreviewIntroductionScreen() {
-    IntroductionScreen {}
 }

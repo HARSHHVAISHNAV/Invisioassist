@@ -14,6 +14,10 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.input.PasswordVisualTransformation
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import androidx.compose.ui.platform.LocalContext
+import android.content.Intent
+
+
 
 class LoginActivity : ComponentActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
@@ -26,6 +30,7 @@ class LoginActivity : ComponentActivity() {
 
 @Composable
 fun LoginScreen() {
+    val context = LocalContext.current // Get context for navigation
     var username by remember { mutableStateOf("") }
     var password by remember { mutableStateOf("") }
 
@@ -62,7 +67,11 @@ fun LoginScreen() {
             Spacer(modifier = Modifier.height(24.dp))
 
             Button(
-                onClick = { /* Handle login */ },
+                onClick = {
+                    // Navigate to LanguageSelectionActivity when login is clicked
+                    val intent = Intent(context, LanguageSelectionActivity::class.java)
+                    context.startActivity(intent)
+                },
                 modifier = Modifier.fillMaxWidth(),
                 colors = ButtonDefaults.buttonColors(Color.Black),
                 shape = RoundedCornerShape(8.dp)
@@ -77,7 +86,11 @@ fun LoginScreen() {
             Spacer(modifier = Modifier.height(8.dp))
 
             Button(
-                onClick = { /* Handle sign-up */ },
+                onClick = {
+                    // Navigate to LanguageSelectionActivity when signup is clicked
+                    val intent = Intent(context, LanguageSelectionActivity::class.java)
+                    context.startActivity(intent)
+                },
                 modifier = Modifier.fillMaxWidth(),
                 colors = ButtonDefaults.buttonColors(Color.Black),
                 shape = RoundedCornerShape(8.dp)
