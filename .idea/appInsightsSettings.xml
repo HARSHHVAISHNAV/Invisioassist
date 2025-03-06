@@ -8,10 +8,10 @@
             <InsightsFilterSettings>
               <option name="connection">
                 <ConnectionSetting>
-                  <option name="appId" value="PLACEHOLDER" />
-                  <option name="mobileSdkAppId" value="" />
-                  <option name="projectId" value="" />
-                  <option name="projectNumber" value="" />
+                  <option name="appId" value="com.muggles.invisioassist" />
+                  <option name="mobileSdkAppId" value="1:148376877219:android:69b1c519c8518b5e176716" />
+                  <option name="projectId" value="invisioassist" />
+                  <option name="projectNumber" value="148376877219" />
                 </ConnectionSetting>
               </option>
               <option name="signal" value="SIGNAL_UNSPECIFIED" />

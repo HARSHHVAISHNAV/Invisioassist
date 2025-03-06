@@ -3,6 +3,8 @@
     xmlns:tools="http://schemas.android.com/tools">
     <!-- ✅ Add Camera Permission -->
     <uses-permission android:name="android.permission.CAMERA" />
+    <uses-permission android:name="android.permission.INTERNET"/>
+
 
     <!-- ✅ Declare Camera Feature -->
     <uses-feature android:name="android.hardware.camera.any" />
@@ -17,17 +19,17 @@
         android:supportsRtl="true"
         android:theme="@style/Theme.Invisioassist"
         tools:targetApi="31">
-<!--        <activity-->
-<!--            android:name=".MainActivity"-->
-<!--            android:exported="true"-->
-<!--            android:label="@string/app_name"-->
-<!--            android:theme="@style/Theme.Invisioassist">-->
-<!--            <intent-filter>-->
-<!--                <action android:name="android.intent.action.MAIN" />-->
+        <!--        <activity-->
+        <!--            android:name=".MainActivity"-->
+        <!--            android:exported="true"-->
+        <!--            android:label="@string/app_name"-->
+        <!--            android:theme="@style/Theme.Invisioassist">-->
+        <!--            <intent-filter>-->
+        <!--                <action android:name="android.intent.action.MAIN" />-->
 
-<!--                <category android:name="android.intent.category.LAUNCHER" />-->
-<!--            </intent-filter>-->
-<!--        </activity>-->
+        <!--                <category android:name="android.intent.category.LAUNCHER" />-->
+        <!--            </intent-filter>-->
+        <!--        </activity>-->
 
 
         <activity
@@ -39,11 +41,20 @@
                 <category android:name="android.intent.category.LAUNCHER" />
             </intent-filter>
         </activity>
-        <activity android:name=".LoginActivity" android:exported="false"/>
+        <!--        <activity android:name=".LoginActivity" android:exported="false"/>-->
         <activity android:name=".LanguageSelectionActivity" />
         <activity android:name=".ScanPreviewActivity" android:exported="false"/>
         <activity android:name=".ProfileActivity" android:exported="false"/>
         <activity android:name=".HelpSupportActivity" android:exported="false"/>
+        <activity android:name=".LoginActivity" android:exported="true">
+            <intent-filter>
+                <action android:name="android.intent.action.VIEW" />
+                <category android:name="android.intent.category.DEFAULT" />
+                <category android:name="android.intent.category.BROWSABLE" />
+                <data android:scheme="com.googleusercontent.apps.148376877219-htk0ds8deiii4c44df62498nrliv7gt4" />
+            </intent-filter>
+        </activity>
+
 
     </application>
 
