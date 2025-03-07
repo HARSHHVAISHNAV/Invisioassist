@@ -21,9 +21,9 @@ class IntroductionActivity : ComponentActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
 
-        // Navigate to LoginActivity after 3 seconds
+        // Navigate to ScanPreviewActivity after 3 seconds
         Handler(Looper.getMainLooper()).postDelayed({
-            startActivity(Intent(this, LoginActivity::class.java))
+            startActivity(Intent(this, ScanPreviewActivity::class.java))
             finish()
         }, 3000)
 
