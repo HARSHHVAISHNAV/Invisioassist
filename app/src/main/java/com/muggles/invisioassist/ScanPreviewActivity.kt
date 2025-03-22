@@ -12,6 +12,7 @@ import androidx.activity.result.contract.ActivityResultContracts
 import androidx.camera.core.*
 import androidx.camera.lifecycle.ProcessCameraProvider
 import androidx.compose.foundation.Image
+import androidx.compose.foundation.gestures.detectTapGestures
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.material.icons.Icons
@@ -22,6 +23,7 @@ import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.asImageBitmap
+import androidx.compose.ui.input.pointer.pointerInput
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.unit.dp
 import androidx.core.content.ContextCompat
@@ -33,23 +35,25 @@ import java.util.concurrent.Executors
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.viewinterop.AndroidView
 import android.view.ViewGroup
-import android.view.ViewGroup.LayoutParams
-import androidx.lifecycle.LifecycleOwner
-import java.util.Locale
 import android.speech.tts.TextToSpeech
 import androidx.camera.view.PreviewView
 import android.provider.MediaStore
+import androidx.lifecycle.LifecycleOwner
 
 class ScanPreviewActivity : ComponentActivity() {
     private lateinit var cameraExecutor: ExecutorService
     private var capturedImage by mutableStateOf<Bitmap?>(null)
     private lateinit var textToSpeech: TextToSpeech
+    private var imageCapture: ImageCapture? = null
+    private var cameraProvider: ProcessCameraProvider? = null
+    private var lastDetectedText by mutableStateOf("") // ✅ Store last detected text
 
     // ✅ Gallery Image Picker Launcher
     private val galleryLauncher = registerForActivityResult(ActivityResultContracts.GetContent()) { uri ->
         uri?.let {
             val bitmap = MediaStore.Images.Media.getBitmap(this.contentResolver, it)
-            processImage(bitmap) // Process selected image
+            capturedImage = bitmap
+            processImage(bitmap)
         }
     }
 
@@ -59,7 +63,7 @@ class ScanPreviewActivity : ComponentActivity() {
 
         textToSpeech = TextToSpeech(this) { status ->
             if (status == TextToSpeech.SUCCESS) {
-                textToSpeech.language = Locale.US
+                textToSpeech.language = java.util.Locale.US
             } else {
                 Log.e("TTS", "Initialization failed")
             }
@@ -68,11 +72,15 @@ class ScanPreviewActivity : ComponentActivity() {
         setContent {
             ScanPreviewScreen(
                 onProfileClick = { startActivity(Intent(this, ProfileActivity::class.java)) },
-                onGalleryClick = { galleryLauncher.launch("image/*") }, // ✅ Open gallery on tap
+                onGalleryClick = { galleryLauncher.launch("image/*") },
                 onCaptureImage = { bitmap ->
                     capturedImage = bitmap
                     processImage(bitmap)
-                }
+                },
+                onDoubleTap = {
+                    stopTTSAndReset()
+                },
+                onRepeat = { repeatText() } // ✅ Repeat button action
             )
         }
     }
@@ -81,7 +89,9 @@ class ScanPreviewActivity : ComponentActivity() {
     fun ScanPreviewScreen(
         onProfileClick: () -> Unit,
         onGalleryClick: () -> Unit,
-        onCaptureImage: (Bitmap) -> Unit
+        onCaptureImage: (Bitmap) -> Unit,
+        onDoubleTap: () -> Unit,
+        onRepeat: () -> Unit // ✅ Repeat function
     ) {
         val context = LocalContext.current
         var isCameraReady by remember { mutableStateOf(false) }
@@ -91,18 +101,33 @@ class ScanPreviewActivity : ComponentActivity() {
             isCameraReady = true
         }
 
-        Box(modifier = Modifier.fillMaxSize()) {
-            if (isCameraReady) {
-                CameraPreview(
-                    modifier = Modifier.fillMaxSize(),
-                    onCaptureImage = onCaptureImage
+        Box(
+            modifier = Modifier
+                .fillMaxSize()
+                .pointerInput(Unit) {
+                    detectTapGestures(
+                        onDoubleTap = { onDoubleTap() } // Detect double-tap to go back
+                    )
+                }
+        ) {
+            if (capturedImage == null) {
+                if (isCameraReady) {
+                    CameraPreview(
+                        modifier = Modifier.fillMaxSize(),
+                        onCaptureImage = onCaptureImage
+                    )
+                }
+            } else {
+                Image(
+                    bitmap = capturedImage!!.asImageBitmap(),
+                    contentDescription = "Captured Image",
+                    modifier = Modifier.fillMaxSize()
                 )
             }
 
-            // Overlay UI elements
             Column(modifier = Modifier.fillMaxSize(), verticalArrangement = Arrangement.Bottom) {
                 Button(
-                    onClick = { onCaptureImage },
+                    onClick = { onRepeat() }, // ✅ Calls repeatText()
                     modifier = Modifier.fillMaxWidth().padding(8.dp),
                     colors = ButtonDefaults.buttonColors(Color.Black)
                 ) {
@@ -131,28 +156,35 @@ class ScanPreviewActivity : ComponentActivity() {
                 val previewView = PreviewView(ctx).apply {
                     layoutParams = ViewGroup.LayoutParams(ViewGroup.LayoutParams.MATCH_PARENT, ViewGroup.LayoutParams.MATCH_PARENT)
                 }
-                val cameraProvider = cameraProviderFuture.get()
-                val preview = Preview.Builder().build().also {
-                    it.setSurfaceProvider(previewView.surfaceProvider)
-                }
-                val cameraSelector = CameraSelector.DEFAULT_BACK_CAMERA
-                val imageCapture = ImageCapture.Builder()
-                    .setCaptureMode(ImageCapture.CAPTURE_MODE_MAXIMIZE_QUALITY)
-                    .build()
-                cameraProvider.bindToLifecycle(this as LifecycleOwner, cameraSelector, preview, imageCapture)
+                cameraProviderFuture.addListener({
+                    cameraProvider = cameraProviderFuture.get()
+                    val preview = Preview.Builder().build().also {
+                        it.setSurfaceProvider(previewView.surfaceProvider)
+                    }
+                    val cameraSelector = CameraSelector.DEFAULT_BACK_CAMERA
+                    imageCapture = ImageCapture.Builder()
+                        .setCaptureMode(ImageCapture.CAPTURE_MODE_MAXIMIZE_QUALITY)
+                        .build()
+
+                    cameraProvider?.unbindAll()
+                    cameraProvider?.bindToLifecycle(this as LifecycleOwner, cameraSelector, preview, imageCapture)
+                }, ContextCompat.getMainExecutor(ctx))
+
                 previewView.setOnTouchListener { _, event ->
                     if (event.action == MotionEvent.ACTION_DOWN) {
-                        imageCapture.takePicture(ContextCompat.getMainExecutor(ctx), object : ImageCapture.OnImageCapturedCallback() {
-                            override fun onCaptureSuccess(image: ImageProxy) {
-                                val bitmap = image.toBitmap()
-                                onCaptureImage(bitmap)
-                                image.close()
-                            }
+                        imageCapture?.let { capture ->
+                            capture.takePicture(ContextCompat.getMainExecutor(ctx), object : ImageCapture.OnImageCapturedCallback() {
+                                override fun onCaptureSuccess(image: ImageProxy) {
+                                    val bitmap = image.toBitmap()
+                                    onCaptureImage(bitmap)
+                                    image.close()
+                                }
 
-                            override fun onError(exc: ImageCaptureException) {
-                                Log.e("Camera", "Image capture failed", exc)
-                            }
-                        })
+                                override fun onError(exc: ImageCaptureException) {
+                                    Log.e("Camera", "Image capture failed", exc)
+                                }
+                            })
+                        }
                     }
                     true
                 }
@@ -162,17 +194,47 @@ class ScanPreviewActivity : ComponentActivity() {
     }
 
     private fun processImage(bitmap: Bitmap) {
-        val image = InputImage.fromBitmap(bitmap, 0)  // Convert Bitmap to ML Kit InputImage
+        val image = InputImage.fromBitmap(bitmap, 0)
         val recognizer = TextRecognition.getClient(TextRecognizerOptions.DEFAULT_OPTIONS)
 
         recognizer.process(image)
             .addOnSuccessListener { visionText ->
-                val detectedText = visionText.text
-                textToSpeech.speak(detectedText, TextToSpeech.QUEUE_FLUSH, null, "")
+                lastDetectedText = visionText.text // ✅ Store detected text
+                textToSpeech.speak(lastDetectedText, TextToSpeech.QUEUE_FLUSH, null, "")
             }
             .addOnFailureListener { e ->
                 Log.e("MLKit", "Text recognition failed", e)
             }
+    }
+
+    private fun repeatText() {
+        if (lastDetectedText.isNotEmpty()) {
+            textToSpeech.speak(lastDetectedText, TextToSpeech.QUEUE_FLUSH, null, "")
+        }
+    }
+
+    private fun stopTTSAndReset() {
+        textToSpeech.stop()
+        capturedImage = null
+        lastDetectedText = "" // ✅ Clear text when resetting
+
+        runOnUiThread {
+            cameraProvider?.unbindAll()
+            setContent {
+                ScanPreviewScreen(
+                    onProfileClick = { startActivity(Intent(this, ProfileActivity::class.java)) },
+                    onGalleryClick = { galleryLauncher.launch("image/*") },
+                    onCaptureImage = { bitmap ->
+                        capturedImage = bitmap
+                        processImage(bitmap)
+                    },
+                    onDoubleTap = {
+                        stopTTSAndReset()
+                    },
+                    onRepeat = { repeatText() }
+                )
+            }
+        }
     }
 
     override fun onDestroy() {
